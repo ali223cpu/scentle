@@ -553,7 +553,10 @@ class MultiplayerProvider extends ChangeNotifier {
         }
 
         final previousStatus = _currentRoom?.status;
-        final isNewRound = previousStatus == 'finished' && room.status == 'playing';
+        final isNewRound = previousStatus == 'finished' &&
+            room.status == 'playing' &&
+            (room.matchStartedAtEpochMs != _currentRoom?.matchStartedAtEpochMs ||
+                room.targetPerfumeId != _currentRoom?.targetPerfumeId);
         if (isNewRound) {
           _resetLocalBoard();
           _lastProcessedEloDelta = null;
@@ -563,6 +566,14 @@ class MultiplayerProvider extends ChangeNotifier {
         final localMe = _currentRoom?.players[_myPlayerId];
         final incomingMe = room.players[_myPlayerId];
         MultiplayerRoom effectiveRoom = room;
+
+        if (previousStatus == 'finished' && !isNewRound) {
+          effectiveRoom = effectiveRoom.copyWith(
+            status: 'finished',
+            winnerId: _currentRoom?.winnerId ?? effectiveRoom.winnerId,
+            winReason: _currentRoom?.winReason ?? effectiveRoom.winReason,
+          );
+        }
 
         if (!isNewRound && localMe != null && incomingMe != null) {
           final isLocalAhead = localMe.turnCount > incomingMe.turnCount ||
@@ -708,7 +719,14 @@ class MultiplayerProvider extends ChangeNotifier {
       _currentRoom = finishedRoom;
       _stopMatchTimer();
       await _handleMatchCompleted(finishedRoom);
-      await _transport.createOrUpdateRoom(finishedRoom);
+      await _transport.patchPlayerState(finishedRoom.roomCode, updatedMe);
+      await _transport.patchRoomOutcome(
+        roomCode: finishedRoom.roomCode,
+        status: 'finished',
+        winnerId: _myPlayerId,
+        winReason: 'SOLVED_FIRST',
+      );
+      _currentRoom = finishedRoom;
       notifyListeners();
       return;
     }
@@ -730,7 +748,14 @@ class MultiplayerProvider extends ChangeNotifier {
       _currentRoom = finishedRoom;
       _stopMatchTimer();
       await _handleMatchCompleted(finishedRoom);
-      await _transport.createOrUpdateRoom(finishedRoom);
+      await _transport.patchPlayerState(finishedRoom.roomCode, updatedMe);
+      await _transport.patchRoomOutcome(
+        roomCode: finishedRoom.roomCode,
+        status: 'finished',
+        winnerId: winnerInfo.key,
+        winReason: winnerInfo.value,
+      );
+      _currentRoom = finishedRoom;
       notifyListeners();
       return;
     }
@@ -859,8 +884,14 @@ class MultiplayerProvider extends ChangeNotifier {
       winnerId: winnerId,
       winReason: reason,
     );
+    _currentRoom = finished;
 
-    await _transport.createOrUpdateRoom(finished);
+    await _transport.patchRoomOutcome(
+      roomCode: _currentRoom!.roomCode,
+      status: 'finished',
+      winnerId: winnerId,
+      winReason: reason,
+    );
   }
 
   Future<void> _handleMatchCompleted(MultiplayerRoom room) async {

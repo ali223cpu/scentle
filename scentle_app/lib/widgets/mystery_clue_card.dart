@@ -31,11 +31,36 @@ class MysteryClueCard extends StatefulWidget {
 
 class _MysteryClueCardState extends State<MysteryClueCard> {
   int _selectedPyramidTab = 0; // 0: Top, 1: Heart, 2: Base
+  int _lastTurnNumber = 1;
+
+  @override
+  void didUpdateWidget(covariant MysteryClueCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.clueState != null) {
+      _checkTurnAdvance(widget.clueState!);
+    }
+  }
+
+  void _checkTurnAdvance(ClueState clue) {
+    final nextTurn = clue.currentTurnNumber;
+    if (nextTurn != _lastTurnNumber) {
+      _lastTurnNumber = nextTurn;
+      // Automatically focus the newly unlocked pyramid tier on turn progression
+      if (nextTurn == 2 && clue.isTopNotesUnlocked) {
+        _selectedPyramidTab = 0;
+      } else if (nextTurn == 3 && clue.isMiddleNotesUnlocked) {
+        _selectedPyramidTab = 1;
+      } else if (nextTurn >= 4 && clue.isBaseNotesUnlocked) {
+        _selectedPyramidTab = 2;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final game = widget.clueState == null ? context.watch<GameProvider>() : null;
     final clue = widget.clueState ?? game!.clueState;
+    _checkTurnAdvance(clue);
     final sc = context.sc;
 
     return Container(

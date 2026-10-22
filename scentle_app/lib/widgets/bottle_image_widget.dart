@@ -57,7 +57,7 @@ class BottleImageWidget extends StatelessWidget {
         imageFilter: ImageFilter.blur(
           sigmaX: blurSigma,
           sigmaY: blurSigma,
-          tileMode: TileMode.clamp,
+          tileMode: TileMode.decal,
         ),
         child: imageContent,
       );
@@ -68,8 +68,9 @@ class BottleImageWidget extends StatelessWidget {
       child: Container(
         width: width,
         height: height,
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: sc.cardSurface, // Studio white in light mode, blends seamlessly!
+          color: const Color(0xFFFFFFFF), // Pure studio white so white JPEG borders blend seamlessly
           borderRadius: radius,
           border: Border.all(color: sc.border, width: 1),
         ),
@@ -94,6 +95,7 @@ class BottleImageWidget extends StatelessWidget {
             painter: LuxuryFlaconPainter(
               liquidColor: liquidColor,
               goldAccent: sc.accent,
+              primaryColor: sc.accent,
             ),
           ),
           if (isLoading)
@@ -120,10 +122,12 @@ class BottleImageWidget extends StatelessWidget {
 class LuxuryFlaconPainter extends CustomPainter {
   final Color liquidColor;
   final Color goldAccent;
+  final Color? primaryColor;
 
   const LuxuryFlaconPainter({
     required this.liquidColor,
     required this.goldAccent,
+    this.primaryColor,
   });
 
   @override
@@ -232,6 +236,8 @@ class LuxuryFlaconPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant LuxuryFlaconPainter oldDelegate) {
-    return oldDelegate.liquidColor != liquidColor || oldDelegate.goldAccent != goldAccent;
+    return oldDelegate.liquidColor != liquidColor ||
+        oldDelegate.goldAccent != goldAccent ||
+        oldDelegate.primaryColor != primaryColor;
   }
 }

@@ -10,6 +10,12 @@ abstract class MultiplayerTransport {
   Future<MultiplayerRoom?> fetchRoom(String roomCode);
   Stream<MultiplayerRoom?> watchRoom(String roomCode);
   Future<void> patchPlayerState(String roomCode, MultiplayerPlayerState playerState);
+  Future<void> patchRoomOutcome({
+    required String roomCode,
+    required String status,
+    required String? winnerId,
+    required String? winReason,
+  });
   Future<void> deleteRoom(String roomCode);
   Future<List<MultiplayerRoom>> findOpenPublicRooms();
   Future<void> dispose();
@@ -94,7 +100,32 @@ class LocalLoopbackTransport implements MultiplayerTransport {
     final updatedPlayers = Map<String, MultiplayerPlayerState>.from(current.players);
     updatedPlayers[playerState.playerId] = playerState;
 
-    final updatedRoom = current.copyWith(players: updatedPlayers);
+    final updatedRoom = current.copyWith(
+      players: updatedPlayers,
+      status: playerState.solved ? 'finished' : current.status,
+      winnerId: playerState.solved ? playerState.playerId : current.winnerId,
+      winReason: playerState.solved ? 'SOLVED_FIRST' : current.winReason,
+    );
+    _rooms[code] = updatedRoom;
+    _getController(code).add(updatedRoom);
+  }
+
+  @override
+  Future<void> patchRoomOutcome({
+    required String roomCode,
+    required String status,
+    required String? winnerId,
+    required String? winReason,
+  }) async {
+    final code = roomCode.toUpperCase();
+    final current = _rooms[code];
+    if (current == null) return;
+
+    final updatedRoom = current.copyWith(
+      status: status,
+      winnerId: winnerId,
+      winReason: winReason,
+    );
     _rooms[code] = updatedRoom;
     _getController(code).add(updatedRoom);
   }
@@ -180,17 +211,48 @@ class FirebaseRestSseTransport implements MultiplayerTransport {
     String roomCode,
     MultiplayerPlayerState playerState,
   ) async {
+    final cleanCode = roomCode.trim().toUpperCase();
     final uri = Uri.parse(
-      '$baseUrl/rooms/${roomCode.toUpperCase()}/players/${playerState.playerId}.json',
+      '$baseUrl/rooms/$cleanCode/players/${playerState.playerId}.json',
     );
-    final payload = jsonEncode(playerState.toJson());
-    final response = await _client.put(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: payload,
-    );
+    // Surgical PATCH updates ONLY this player's node—never overwrites opponent's concurrent guess
+    final response = await _client
+        .patch(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(playerState.toJson()),
+        )
+        .timeout(const Duration(seconds: 5));
+
     if (response.statusCode >= 400) {
-      throw HttpException('Failed to patch player: ${response.statusCode} - ${response.body}');
+      throw HttpException('Failed to patch player state: HTTP ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  /// Atomic status/winner resolution without touching the players map
+  @override
+  Future<void> patchRoomOutcome({
+    required String roomCode,
+    required String status,
+    required String? winnerId,
+    required String? winReason,
+  }) async {
+    final cleanCode = roomCode.trim().toUpperCase();
+    final uri = Uri.parse('$baseUrl/rooms/$cleanCode.json');
+    final response = await _client
+        .patch(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'status': status,
+            'winnerId': winnerId,
+            'winReason': winReason,
+          }),
+        )
+        .timeout(const Duration(seconds: 5));
+
+    if (response.statusCode >= 400) {
+      throw HttpException('Failed to patch room outcome: HTTP ${response.statusCode} - ${response.body}');
     }
   }
 

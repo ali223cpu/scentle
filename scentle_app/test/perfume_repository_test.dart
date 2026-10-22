@@ -123,6 +123,20 @@ void main() {
       final puzzleNumber = repo.getDailyPuzzleNumber(date);
       expect(puzzleNumber, greaterThan(1));
     });
+
+    test('8. Fisher-Yates schedule guarantees 1,229 unique daily targets with 0 repeats for 1,229 days', () {
+      final repo = PerfumeRepository.instance;
+      final seenIds = <int>{};
+      final startDate = DateTime.utc(2026, 1, 1);
+
+      for (int day = 0; day < 1229; day++) {
+        final date = startDate.add(Duration(days: day));
+        final target = repo.getDailyTarget(date);
+        expect(seenIds.contains(target.id), isFalse, reason: 'Duplicate on day $day: ${target.name}');
+        seenIds.add(target.id);
+      }
+      expect(seenIds.length, 1229);
+    });
   });
 
   group('StringNormalizer Unit Tests', () {
