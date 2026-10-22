@@ -1,0 +1,13 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      ".read": true,
+      "$roomCode": {
+        ".write": "!data.exists() || data.child('status').val() != 'finished' || !newData.exists()",
+        ".validate": "newData.hasChildren(['roomCode', 'status', 'targetPerfumeId']) && newData.child('targetPerfumeId').isNumber() && newData.child('roomCode').val().length == 4"
+      }
+    }
+  }
+}

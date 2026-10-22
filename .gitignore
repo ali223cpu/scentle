@@ -1,0 +1,105 @@
+# -----------------------------------------------------------------------------
+# Root .gitignore for Scentle Monorepo
+# -----------------------------------------------------------------------------
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# IDE & Editor Configurations
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.bak
+*.iml
+*.ipr
+*.iws
+
+# Python & Data Pipeline
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Flutter / Dart General
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+**/build/
+**/coverage/
+**/doc/api/
+.packages
+
+# Flutter Web
+**/lib/generated_plugin_registrant.dart
+
+# Symbolication & Obfuscation
+**/app.*.symbols
+**/app.*.map.json
+
+# Android Specific
+**/android/.gradle/
+**/android/local.properties
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/**/generated/
+**/android/**/build/
+
+# iOS & macOS Specific
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.framework
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/profile
+**/ios/release
+**/macos/Flutter/ephemeral/
+**/macos/Pods/
+
+# Desktop Ephemeral Artifacts
+**/windows/flutter/ephemeral/
+**/linux/flutter/ephemeral/
+
+# Log Files
+*.log
